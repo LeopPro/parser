@@ -43,23 +43,24 @@ func (checker *nodeTextCleaner) Leave(in Node) (out Node, ok bool) {
 }
 func main() {
 	parser := parser.New()
-	stmt, err := parser.ParseOneStmt("select AVG(distinct test_score)", "", "")
+	stmt, err := parser.ParseOneStmt("CREATE TABLE t (`id` INT(11) NULL)", "", "")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	stmt1, err := parser.ParseOneStmt("CREATE TABLE t (id INT NULL)", "", "")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	CleanNodeText(stmt)
+	CleanNodeText(stmt1)
+
 	stmt.Accept(printVisitor{})
 	fmt.Println()
 	fmt.Println()
 	fmt.Println()
 	fmt.Println()
-	stmt1, err := parser.ParseOneStmt("select `AVG`(test_score)", "", "")
-	if err != nil {
-		fmt.Println(err.Error())
-	}
 	stmt1.Accept(printVisitor{})
-	CleanNodeText(stmt)
-	CleanNodeText(stmt1)
 
 	result := reflect.DeepEqual(stmt, stmt1)
-	print(result)
+	fmt.Println(result)
 }
