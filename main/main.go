@@ -43,7 +43,7 @@ func (checker *nodeTextCleaner) Leave(in Node) (out Node, ok bool) {
 }
 func main() {
 	parser := parser.New()
-	stmt, err := parser.ParseOneStmt("select AVG(test_score)", "", "")
+	stmt, err := parser.ParseOneStmt("select AVG(distinct test_score)", "", "")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -52,7 +52,7 @@ func main() {
 	fmt.Println()
 	fmt.Println()
 	fmt.Println()
-	stmt1, err := parser.ParseOneStmt("select `AVG`(`test_score`)", "", "")
+	stmt1, err := parser.ParseOneStmt("select `AVG`(test_score)", "", "")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
