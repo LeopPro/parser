@@ -85,7 +85,59 @@ type Join struct {
 
 // Restore implements Node interface.
 func (n *Join) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if ctx.JoinLevel != 0 {
+		ctx.WritePlain("(")
+		defer ctx.WritePlain(")")
+	}
+	ctx.JoinLevel++
+	if err := n.Left.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore Join.Left")
+	}
+	ctx.JoinLevel--
+	if n.Right == nil {
+		return nil
+	}
+	if n.NaturalJoin {
+		ctx.WriteKeyWord(" NATURAL")
+	}
+	switch n.Tp {
+	case LeftJoin:
+		ctx.WriteKeyWord(" LEFT")
+	case RightJoin:
+		ctx.WriteKeyWord(" RIGHT")
+	}
+	if n.StraightJoin {
+		ctx.WriteKeyWord(" STRAIGHT_JOIN ")
+	} else {
+		ctx.WriteKeyWord(" JOIN ")
+	}
+	ctx.JoinLevel++
+	if err := n.Right.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore Join.Right")
+	}
+	ctx.JoinLevel--
+
+	if n.On != nil {
+		ctx.WritePlain(" ")
+		if err := n.On.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore Join.On")
+		}
+	}
+	if len(n.Using) != 0 {
+		ctx.WriteKeyWord(" USING ")
+		ctx.WritePlain("(")
+		for i, v := range n.Using {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := v.Restore(ctx); err != nil {
+				return errors.Annotate(err, "An error occurred while restore Join.Using")
+			}
+		}
+		ctx.WritePlain(")")
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -234,7 +286,15 @@ type DeleteTableList struct {
 
 // Restore implements Node interface.
 func (n *DeleteTableList) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	for i, t := range n.Tables {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := t.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore DeleteTableList.Tables[%v]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -265,7 +325,11 @@ type OnCondition struct {
 
 // Restore implements Node interface.
 func (n *OnCondition) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ON ")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore OnCondition.Expr")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -297,7 +361,26 @@ type TableSource struct {
 
 // Restore implements Node interface.
 func (n *TableSource) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	needParen := false
+	switch n.Source.(type) {
+	case *SelectStmt, *UnionStmt:
+		needParen = true
+	}
+	if needParen {
+		ctx.WritePlain("(")
+	}
+	if err := n.Source.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TableSource.Source")
+	}
+	if needParen {
+		ctx.WritePlain(")")
+	}
+	if asName := n.AsName.String(); asName != "" {
+		ctx.WriteKeyWord(" AS ")
+		ctx.WriteName(asName)
+	}
+
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -472,7 +555,10 @@ type TableRefsClause struct {
 
 // Restore implements Node interface.
 func (n *TableRefsClause) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.TableRefs.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore TableRefsClause.TableRefs")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -500,7 +586,13 @@ type ByItem struct {
 
 // Restore implements Node interface.
 func (n *ByItem) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore ByItem.Expr")
+	}
+	if n.Desc {
+		ctx.WriteKeyWord(" DESC")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -526,7 +618,16 @@ type GroupByClause struct {
 
 // Restore implements Node interface.
 func (n *GroupByClause) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("GROUP BY ")
+	for i, v := range n.Items {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := v.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore GroupByClause.Items[%d]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -554,7 +655,11 @@ type HavingClause struct {
 
 // Restore implements Node interface.
 func (n *HavingClause) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("HAVING ")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore HavingClause.Expr")
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
@@ -581,7 +686,16 @@ type OrderByClause struct {
 
 // Restore implements Node interface.
 func (n *OrderByClause) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	ctx.WriteKeyWord("ORDER BY ")
+	for i, item := range n.Items {
+		if i != 0 {
+			ctx.WritePlain(",")
+		}
+		if err := item.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore OrderByClause.Items[%d]", i)
+		}
+	}
+	return nil
 }
 
 // Accept implements Node Accept interface.
