@@ -588,7 +588,15 @@ type ExistsSubqueryExpr struct {
 
 // Restore implements Node interface.
 func (n *ExistsSubqueryExpr) Restore(ctx *RestoreCtx) error {
-	return errors.New("Not implemented")
+	if n.Not {
+		ctx.WriteKeyWord("NOT EXISTS ")
+	} else {
+		ctx.WriteKeyWord("EXISTS ")
+	}
+	if err := n.Sel.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore ExistsSubqueryExpr.Sel")
+	}
+	return nil
 }
 
 // Format the ExprNode into a Writer.
@@ -634,21 +642,22 @@ func (n *PatternInExpr) Restore(ctx *RestoreCtx) error {
 	} else {
 		ctx.WriteKeyWord(" IN ")
 	}
-	ctx.WritePlain("(")
-	for i, expr := range n.List {
-		if i != 0 {
-			ctx.WritePlain(",")
-		}
-		if err := expr.Restore(ctx); err != nil {
-			return errors.Annotatef(err, "An error occurred while restore PatternInExpr.List[%d]", i)
-		}
-	}
 	if n.Sel != nil {
 		if err := n.Sel.Restore(ctx); err != nil {
 			return errors.Annotate(err, "An error occurred while restore PatternInExpr.Sel")
 		}
+	} else {
+		ctx.WritePlain("(")
+		for i, expr := range n.List {
+			if i != 0 {
+				ctx.WritePlain(",")
+			}
+			if err := expr.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore PatternInExpr.List[%d]", i)
+			}
+		}
+		ctx.WritePlain(")")
 	}
-	ctx.WritePlain(")")
 	return nil
 }
 
