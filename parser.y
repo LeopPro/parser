@@ -188,6 +188,7 @@ import (
 	nvarcharType		"NVARCHAR"
 	on			"ON"
 	option			"OPTION"
+	optionally		"OPTIONALLY"
 	or			"OR"
 	order			"ORDER"
 	outer			"OUTER"
@@ -4363,6 +4364,10 @@ TableName:
 	{
 		$$ = &ast.TableName{Schema:model.NewCIStr($1),	Name:model.NewCIStr($3)}
 	}
+|	Identifier '.' '*'
+	{
+		$$ = &ast.TableName{Name:model.NewCIStr($1)}
+	}
 
 TableNameList:
 	TableName
@@ -4724,7 +4729,7 @@ WindowFrameStart:
 	}
 |	"INTERVAL" Expression TimeUnit "PRECEDING"
 	{
-		$$ = ast.FrameBound{Type: ast.Preceding, Expr: ast.NewValueExpr($2), Unit: ast.NewValueExpr($3),}
+		$$ = ast.FrameBound{Type: ast.Preceding, Expr: $2, Unit: ast.NewValueExpr($3),}
 	}
 |	"CURRENT" "ROW"
 	{
@@ -4756,7 +4761,7 @@ WindowFrameBound:
 	}
 |	"INTERVAL" Expression TimeUnit "FOLLOWING"
 	{
-		$$ = ast.FrameBound{Type: ast.Following, Expr: ast.NewValueExpr($2), Unit: ast.NewValueExpr($3),}
+		$$ = ast.FrameBound{Type: ast.Following, Expr: $2, Unit: ast.NewValueExpr($3),}
 	}
 
 OptWindowingClause:
@@ -5799,7 +5804,7 @@ AdminStmt:
 		$$ = &ast.AdminStmt{
 			Tp: ast.AdminRestoreTable,
 			Tables: []*ast.TableName{$4.(*ast.TableName)},
-		        JobNumber: $5.(int64),
+			JobNumber: $5.(int64),
 		}
 	}
 |	"ADMIN" "CLEANUP" "INDEX" TableName Identifier
@@ -5915,7 +5920,7 @@ ShowStmt:
 	{
 		stmt := $2.(*ast.ShowStmt)
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -5927,6 +5932,13 @@ ShowStmt:
 	{
 		$$ = &ast.ShowStmt{
 			Tp:	ast.ShowCreateTable,
+			Table:	$4.(*ast.TableName),
+		}
+	}
+|	"SHOW" "CREATE" "VIEW" TableName
+	{
+		$$ = &ast.ShowStmt{
+			Tp:	ast.ShowCreateView,
 			Table:	$4.(*ast.TableName),
 		}
 	}
@@ -5978,7 +5990,7 @@ ShowStmt:
 			Tp: ast.ShowStatsMeta,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -5992,7 +6004,7 @@ ShowStmt:
 			Tp: ast.ShowStatsHistograms,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -6006,7 +6018,7 @@ ShowStmt:
 			Tp: ast.ShowStatsBuckets,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -6020,7 +6032,7 @@ ShowStmt:
 			Tp: ast.ShowStatsHealthy,
 		}
 		if $3 != nil {
-			if x, ok := $3.(*ast.PatternLikeExpr); ok {
+			if x, ok := $3.(*ast.PatternLikeExpr); ok && x.Expr == nil {
 				stmt.Pattern = x
 			} else {
 				stmt.Where = $3.(ast.ExprNode)
@@ -7539,11 +7551,11 @@ PrivType:
 	}
 |	"CREATE" "VIEW"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.CreateViewPriv
 	}
 |	"SHOW" "VIEW"
 	{
-		$$ = mysql.PrivilegeType(0)
+		$$ = mysql.ShowViewPriv
 	}
 |	"CREATE" "ROUTINE"
 	{
@@ -7712,6 +7724,10 @@ FieldsTerminated:
 Enclosed:
 	{
 		$$ = ""
+	}
+|	"OPTIONALLY" "ENCLOSED" "BY" stringLit
+	{
+		$$ = $4
 	}
 |	"ENCLOSED" "BY" stringLit
 	{

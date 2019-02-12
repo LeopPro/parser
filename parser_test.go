@@ -58,7 +58,7 @@ func (s *testParserSuite) TestSimple(c *C) {
 		"interval", "is", "join", "key", "keys", "kill", "leading", "left", "like", "limit", "lines", "load",
 		"localtime", "localtimestamp", "lock", "longblob", "longtext", "mediumblob", "maxvalue", "mediumint", "mediumtext",
 		"minute_microsecond", "minute_second", "mod", "not", "no_write_to_binlog", "null", "numeric",
-		"on", "option", "or", "order", "outer", "partition", "precision", "primary", "procedure", "range", "read", "real",
+		"on", "option", "optionally", "or", "order", "outer", "partition", "precision", "primary", "procedure", "range", "read", "real",
 		"references", "regexp", "rename", "repeat", "replace", "revoke", "restrict", "right", "rlike",
 		"schema", "schemas", "second_microsecond", "select", "set", "show", "smallint",
 		"starting", "table", "terminated", "then", "tinyblob", "tinyint", "tinytext", "to",
@@ -391,48 +391,50 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"SELECT a.b.c.d FROM t", false, ""},
 
 		// do statement
-		{"DO 1", true, ""},
+		{"DO 1", true, "DO 1"},
+		{"DO 1, sleep(1)", true, "DO 1, SLEEP(1)"},
 		{"DO 1 from t", false, ""},
 
 		// load data
-		{"load data infile '/tmp/t.csv' into table t", true, ""},
-		{"load data infile '/tmp/t.csv' into table t character set utf8", true, ""},
-		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t lines starting by 'ab'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, ""},
-		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, ""},
+		{"load data local infile '/tmp/tmp.csv' into table t1 fields terminated by ',' optionally enclosed by '\"' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/tmp.csv' INTO TABLE `t1` FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES"},
+		{"load data infile '/tmp/t.csv' into table t", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
+		{"load data infile '/tmp/t.csv' into table t character set utf8", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t`"},
+		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
+		{"load data infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
+		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b'"},
+		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*'"},
+		{"load data infile '/tmp/t.csv' into table t lines starting by 'ab'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab'"},
+		{"load data infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy'"},
+		{"load data infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy'"},
 		{"load data infile '/tmp/t.csv' into table t terminated by 'xy' fields terminated by 'ab'", false, ""},
-		{"load data local infile '/tmp/t.csv' into table t", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, ""},
+		{"load data local infile '/tmp/t.csv' into table t", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t`"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
+		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*'"},
+		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*'"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab'"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy'"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy'", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy'"},
 		{"load data local infile '/tmp/t.csv' into table t terminated by 'xy' fields terminated by 'ab'", false, ""},
-		{"load data infile '/tmp/t.csv' into table t (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, ""},
+		{"load data infile '/tmp/t.csv' into table t (a,b)", true, "LOAD DATA INFILE '/tmp/t.csv' INTO TABLE `t` (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t columns terminated by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' enclosed by 'b' escaped by '*' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t character set utf8 fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy' (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' lines terminated by 'xy' (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' LINES TERMINATED BY 'xy' (`a`,`b`)"},
 		{"load data local infile '/tmp/t.csv' into table t (a,b) fields terminated by 'ab'", false, ""},
-		{"load data local infile '/tmp/t.csv' into table t ignore 1 lines", true, ""},
+		{"load data local infile '/tmp/t.csv' into table t ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` IGNORE 1 LINES"},
 		{"load data local infile '/tmp/t.csv' into table t ignore -1 lines", false, ""},
 		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' (a,b) ignore 1 lines", false, ""},
-		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' ignore 1 lines", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' ignore 1 lines (a,b)", true, ""},
-		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by ''", true, ""},
+		{"load data local infile '/tmp/t.csv' into table t lines starting by 'ab' terminated by 'xy' ignore 1 lines", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` LINES STARTING BY 'ab' TERMINATED BY 'xy' IGNORE 1 LINES"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by '*' ignore 1 lines (a,b)", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY '*' IGNORE 1 LINES (`a`,`b`)"},
+		{"load data local infile '/tmp/t.csv' into table t fields terminated by 'ab' enclosed by 'b' escaped by ''", true, "LOAD DATA LOCAL INFILE '/tmp/t.csv' INTO TABLE `t` FIELDS TERMINATED BY 'ab' ENCLOSED BY 'b' ESCAPED BY ''"},
 
 		// select for update
 		{"SELECT * from t for update", true, "SELECT * FROM `t` FOR UPDATE"},
@@ -459,38 +461,89 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"select straight_join * from t1 right join t2 on t1.id = t2.id", true, "SELECT STRAIGHT_JOIN * FROM `t1` RIGHT JOIN `t2` ON `t1`.`id`=`t2`.`id`"},
 		{"select straight_join * from t1 straight_join t2 on t1.id = t2.id", true, "SELECT STRAIGHT_JOIN * FROM `t1` STRAIGHT_JOIN `t2` ON `t1`.`id`=`t2`.`id`"},
 
+		// delete statement
+		// single table syntax
+		{"DELETE from t1", true, "DELETE FROM `t1`"},
+		{"DELETE LOW_priORITY from t1", true, "DELETE LOW_PRIORITY FROM `t1`"},
+		{"DELETE quick from t1", true, "DELETE QUICK FROM `t1`"},
+		{"DELETE ignore from t1", true, "DELETE IGNORE FROM `t1`"},
+		{"DELETE low_priority quick ignore from t1", true, "DELETE LOW_PRIORITY QUICK IGNORE FROM `t1`"},
+		{"DELETE FROM t1 WHERE t1.a > 0 ORDER BY t1.a", true, "DELETE FROM `t1` WHERE `t1`.`a`>0 ORDER BY `t1`.`a`"},
+		{"delete from t1 where a=26", true, "DELETE FROM `t1` WHERE `a`=26"},
+		{"DELETE from t1 where a=1 limit 1", true, "DELETE FROM `t1` WHERE `a`=1 LIMIT 1"},
+		{"DELETE FROM t1 WHERE t1.a > 0 ORDER BY t1.a LIMIT 1", true, "DELETE FROM `t1` WHERE `t1`.`a`>0 ORDER BY `t1`.`a` LIMIT 1"},
+
+		// multi table syntax: before from
+		{"delete low_priority t1, t2 from t1, t2", true, "DELETE LOW_PRIORITY `t1`,`t2` FROM (`t1`) JOIN `t2`"},
+		{"delete quick t1, t2 from t1, t2", true, "DELETE QUICK `t1`,`t2` FROM (`t1`) JOIN `t2`"},
+		{"delete ignore t1, t2 from t1, t2", true, "DELETE IGNORE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
+		{"delete low_priority quick ignore t1, t2 from t1, t2 where t1.a > 5", true, "DELETE LOW_PRIORITY QUICK IGNORE `t1`,`t2` FROM (`t1`) JOIN `t2` WHERE `t1`.`a`>5"},
+		{"delete t1, t2 from t1, t2", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
+		{"delete t1, t2 from t1, t2 where t1.a = 1 and t2.b <> 1", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2` WHERE `t1`.`a`=1 AND `t2`.`b`!=1"},
+		{"delete t1 from t1, t2", true, "DELETE `t1` FROM (`t1`) JOIN `t2`"},
+		{"delete t2 from t1, t2", true, "DELETE `t2` FROM (`t1`) JOIN `t2`"},
+		{"delete t1 from t1", true, "DELETE `t1` FROM `t1`"},
+		{"delete t1,t2,t3 from t1, t2, t3", true, "DELETE `t1`,`t2`,`t3` FROM ((`t1`) JOIN `t2`) JOIN `t3`"},
+		{"delete t1,t2,t3 from t1, t2, t3 where t3.c < 5 and t1.a = 3", true, "DELETE `t1`,`t2`,`t3` FROM ((`t1`) JOIN `t2`) JOIN `t3` WHERE `t3`.`c`<5 AND `t1`.`a`=3"},
+		{"delete t1 from t1, t1 as t2 where t1.b = t2.b and t1.a > t2.a", true, "DELETE `t1` FROM (`t1`) JOIN `t1` AS `t2` WHERE `t1`.`b`=`t2`.`b` AND `t1`.`a`>`t2`.`a`"},
+		{"delete t1.*,t2 from t1, t2", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
+		{"delete t1.*, t2.* from t1, t2", true, "DELETE `t1`,`t2` FROM (`t1`) JOIN `t2`"},
+		{"delete t11.*, t12.* from t11, t12 where t11.a = t12.a and t11.b <> 1", true, "DELETE `t11`,`t12` FROM (`t11`) JOIN `t12` WHERE `t11`.`a`=`t12`.`a` AND `t11`.`b`!=1"},
+
+		// multi table syntax: with using
+		{"DELETE quick FROM t1,t2 USING t1,t2", true, "DELETE QUICK FROM `t1`,`t2` USING (`t1`) JOIN `t2`"},
+		{"DELETE low_priority ignore FROM t1,t2 USING t1,t2", true, "DELETE LOW_PRIORITY IGNORE FROM `t1`,`t2` USING (`t1`) JOIN `t2`"},
+		{"DELETE low_priority quick ignore FROM t1,t2 USING t1,t2", true, "DELETE LOW_PRIORITY QUICK IGNORE FROM `t1`,`t2` USING (`t1`) JOIN `t2`"},
+		{"DELETE FROM t1 USING t1 WHERE post='1'", true, "DELETE FROM `t1` USING `t1` WHERE `post`='1'"},
+		{"DELETE FROM t1,t2 USING t1,t2", true, "DELETE FROM `t1`,`t2` USING (`t1`) JOIN `t2`"},
+		{"DELETE FROM t1,t2,t3 USING t1,t2,t3 where t3.a = 1", true, "DELETE FROM `t1`,`t2`,`t3` USING ((`t1`) JOIN `t2`) JOIN `t3` WHERE `t3`.`a`=1"},
+		{"DELETE FROM t2,t3 USING t1,t2,t3 where t1.a = 1", true, "DELETE FROM `t2`,`t3` USING ((`t1`) JOIN `t2`) JOIN `t3` WHERE `t1`.`a`=1"},
+		{"DELETE FROM t2.*,t3.* USING t1,t2,t3 where t1.a = 1", true, "DELETE FROM `t2`,`t3` USING ((`t1`) JOIN `t2`) JOIN `t3` WHERE `t1`.`a`=1"},
+		{"DELETE FROM t1,t2.*,t3.* USING t1,t2,t3 where t1.a = 1", true, "DELETE FROM `t1`,`t2`,`t3` USING ((`t1`) JOIN `t2`) JOIN `t3` WHERE `t1`.`a`=1"},
+
+		// for delete statement
+		{"DELETE t1, t2 FROM t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id;", true, "DELETE `t1`,`t2` FROM (`t1` JOIN `t2`) JOIN `t3` WHERE `t1`.`id`=`t2`.`id` AND `t2`.`id`=`t3`.`id`"},
+		{"DELETE FROM t1, t2 USING t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id;", true, "DELETE FROM `t1`,`t2` USING (`t1` JOIN `t2`) JOIN `t3` WHERE `t1`.`id`=`t2`.`id` AND `t2`.`id`=`t3`.`id`"},
+		// for optimizer hint in delete statement
+		{"DELETE /*+ TiDB_INLJ(t1, t2) */ t1, t2 from t1, t2 where t1.id=t2.id;", true, "DELETE /*+ TIDB_INLJ(`t1`, `t2`)*/ `t1`,`t2` FROM (`t1`) JOIN `t2` WHERE `t1`.`id`=`t2`.`id`"},
+		{"DELETE /*+ TiDB_HJ(t1, t2) */ t1, t2 from t1, t2 where t1.id=t2.id", true, "DELETE /*+ TIDB_HJ(`t1`, `t2`)*/ `t1`,`t2` FROM (`t1`) JOIN `t2` WHERE `t1`.`id`=`t2`.`id`"},
+		{"DELETE /*+ TiDB_SMJ(t1, t2) */ t1, t2 from t1, t2 where t1.id=t2.id", true, "DELETE /*+ TIDB_SMJ(`t1`, `t2`)*/ `t1`,`t2` FROM (`t1`) JOIN `t2` WHERE `t1`.`id`=`t2`.`id`"},
 		// for "USE INDEX" in delete statement
-		{"DELETE FROM t1 USE INDEX(idx_a) WHERE t1.id=1;", true, ""},
-		{"DELETE t1, t2 FROM t1 USE INDEX(idx_a) JOIN t2 WHERE t1.id=t2.id;", true, ""},
-		{"DELETE t1, t2 FROM t1 USE INDEX(idx_a) JOIN t2 USE INDEX(idx_a) WHERE t1.id=t2.id;", true, ""},
+		{"DELETE FROM t1 USE INDEX(idx_a) WHERE t1.id=1;", true, "DELETE FROM `t1` USE INDEX (`idx_a`) WHERE `t1`.`id`=1"},
+		{"DELETE t1, t2 FROM t1 USE INDEX(idx_a) JOIN t2 WHERE t1.id=t2.id;", true, "DELETE `t1`,`t2` FROM `t1` USE INDEX (`idx_a`) JOIN `t2` WHERE `t1`.`id`=`t2`.`id`"},
+		{"DELETE t1, t2 FROM t1 USE INDEX(idx_a) JOIN t2 USE INDEX(idx_a) WHERE t1.id=t2.id;", true, "DELETE `t1`,`t2` FROM `t1` USE INDEX (`idx_a`) JOIN `t2` USE INDEX (`idx_a`) WHERE `t1`.`id`=`t2`.`id`"},
+
+		// for fail case
+		{"DELETE t1, t2 FROM t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id limit 10;", false, ""},
+		{"DELETE t1, t2 FROM t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id order by t1.id;", false, ""},
 
 		// for admin
-		{"admin show ddl;", true, ""},
-		{"admin show ddl jobs;", true, ""},
-		{"admin show ddl jobs 20;", true, ""},
+		{"admin show ddl;", true, "ADMIN SHOW DDL"},
+		{"admin show ddl jobs;", true, "ADMIN SHOW DDL JOBS"},
+		{"admin show ddl jobs 20;", true, "ADMIN SHOW DDL JOBS 20"},
 		{"admin show ddl jobs -1;", false, ""},
-		{"admin show ddl job queries 1", true, ""},
-		{"admin show ddl job queries 1, 2, 3, 4", true, ""},
-		{"admin show t1 next_row_id", true, ""},
-		{"admin check table t1, t2;", true, ""},
-		{"admin check index tableName idxName;", true, ""},
-		{"admin check index tableName idxName (1, 2), (4, 5);", true, ""},
-		{"admin checksum table t1, t2;", true, ""},
-		{"admin cancel ddl jobs 1", true, ""},
-		{"admin cancel ddl jobs 1, 2", true, ""},
-		{"admin recover index t1 idx_a", true, ""},
-		{"admin cleanup index t1 idx_a", true, ""},
-		{"admin show slow top 3", true, ""},
-		{"admin show slow top internal 7", true, ""},
-		{"admin show slow top all 9", true, ""},
-		{"admin show slow recent 11", true, ""},
-		{"admin restore table by job 11", true, ""},
+		{"admin show ddl job queries 1", true, "ADMIN SHOW DDL JOB QUERIES 1"},
+		{"admin show ddl job queries 1, 2, 3, 4", true, "ADMIN SHOW DDL JOB QUERIES 1, 2, 3, 4"},
+		{"admin show t1 next_row_id", true, "ADMIN SHOW `t1` NEXT_ROW_ID"},
+		{"admin check table t1, t2;", true, "ADMIN CHECK TABLE `t1`, `t2`"},
+		{"admin check index tableName idxName;", true, "ADMIN CHECK INDEX `tableName` idxName"},
+		{"admin check index tableName idxName (1, 2), (4, 5);", true, "ADMIN CHECK INDEX `tableName` idxName (1,2), (4,5)"},
+		{"admin checksum table t1, t2;", true, "ADMIN CHECKSUM TABLE `t1`, `t2`"},
+		{"admin cancel ddl jobs 1", true, "ADMIN CANCEL DDL JOBS 1"},
+		{"admin cancel ddl jobs 1, 2", true, "ADMIN CANCEL DDL JOBS 1, 2"},
+		{"admin recover index t1 idx_a", true, "ADMIN RECOVER INDEX `t1` idx_a"},
+		{"admin cleanup index t1 idx_a", true, "ADMIN CLEANUP INDEX `t1` idx_a"},
+		{"admin show slow top 3", true, "ADMIN SHOW SLOW TOP 3"},
+		{"admin show slow top internal 7", true, "ADMIN SHOW SLOW TOP INTERNAL 7"},
+		{"admin show slow top all 9", true, "ADMIN SHOW SLOW TOP ALL 9"},
+		{"admin show slow recent 11", true, "ADMIN SHOW SLOW RECENT 11"},
+		{"admin restore table by job 11", true, "ADMIN RESTORE TABLE BY JOB 11"},
 		{"admin restore table by job 11,12,13", false, ""},
 		{"admin restore table by job", false, ""},
-		{"admin restore table t1", true, ""},
+		{"admin restore table t1", true, "ADMIN RESTORE TABLE `t1`"},
 		{"admin restore table t1,t2", false, ""},
 		{"admin restore table ", false, ""},
-		{"admin restore table t1 100", true, ""},
+		{"admin restore table t1 100", true, "ADMIN RESTORE TABLE `t1` 100"},
 		{"admin restore table t1 abc", false, ""},
 
 		// for on duplicate key update
@@ -501,20 +554,25 @@ func (s *testParserSuite) TestDMLStmt(c *C) {
 		{"INSERT INTO t SET a=1,b=2", true, "INSERT INTO `t` SET `a`=1,`b`=2"},
 		{"INSERT INTO t (a) SET a=1", false, ""},
 
-		// for delete statement
-		{"DELETE t1, t2 FROM t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id;", true, ""},
-		{"DELETE FROM t1, t2 USING t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id;", true, ""},
-		{"DELETE t1, t2 FROM t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id limit 10;", false, ""},
-		{"DELETE /*+ TiDB_INLJ(t1, t2) */ t1, t2 from t1, t2 where t1.id=t2.id;", true, ""},
-		{"DELETE /*+ TiDB_HJ(t1, t2) */ t1, t2 from t1, t2 where t1.id=t2.id", true, ""},
-
 		// for update statement
-		{"UPDATE t SET id = id + 1 ORDER BY id DESC;", true, ""},
-		{"UPDATE items,month SET items.price=month.price WHERE items.id=month.id;", true, ""},
+		{"UPDATE LOW_PRIORITY IGNORE t SET id = id + 1 ORDER BY id DESC;", true, "UPDATE LOW_PRIORITY IGNORE `t` SET `id`=`id`+1 ORDER BY `id` DESC"},
+		{"UPDATE t SET id = id + 1 ORDER BY id DESC;", true, "UPDATE `t` SET `id`=`id`+1 ORDER BY `id` DESC"},
+		{"UPDATE t SET id = id + 1 ORDER BY id DESC limit 3 ;", true, "UPDATE `t` SET `id`=`id`+1 ORDER BY `id` DESC LIMIT 3"},
+		{"UPDATE t SET id = id + 1, name = 'jojo';", true, "UPDATE `t` SET `id`=`id`+1, `name`='jojo'"},
+		{"UPDATE items,month SET items.price=month.price WHERE items.id=month.id;", true, "UPDATE (`items`) JOIN `month` SET `items`.`price`=`month`.`price` WHERE `items`.`id`=`month`.`id`"},
+		{"UPDATE user T0 LEFT OUTER JOIN user_profile T1 ON T1.id = T0.profile_id SET T0.profile_id = 1 WHERE T0.profile_id IN (1);", true, "UPDATE `user` AS `T0` LEFT JOIN `user_profile` AS `T1` ON `T1`.`id`=`T0`.`profile_id` SET `T0`.`profile_id`=1 WHERE `T0`.`profile_id` IN (1)"},
+		{"UPDATE t1, t2 set t1.profile_id = 1, t2.profile_id = 1 where ta.a=t.ba", true, "UPDATE (`t1`) JOIN `t2` SET `t1`.`profile_id`=1, `t2`.`profile_id`=1 WHERE `ta`.`a`=`t`.`ba`"},
+		// for optimizer hint in update statement
+		{"UPDATE /*+ TiDB_INLJ(t1, t2) */ t1, t2 set t1.profile_id = 1, t2.profile_id = 1 where ta.a=t.ba", true, "UPDATE /*+ TIDB_INLJ(`t1`, `t2`)*/ (`t1`) JOIN `t2` SET `t1`.`profile_id`=1, `t2`.`profile_id`=1 WHERE `ta`.`a`=`t`.`ba`"},
+		{"UPDATE /*+ TiDB_SMJ(t1, t2) */ t1, t2 set t1.profile_id = 1, t2.profile_id = 1 where ta.a=t.ba", true, "UPDATE /*+ TIDB_SMJ(`t1`, `t2`)*/ (`t1`) JOIN `t2` SET `t1`.`profile_id`=1, `t2`.`profile_id`=1 WHERE `ta`.`a`=`t`.`ba`"},
+		{"UPDATE /*+ TiDB_HJ(t1, t2) */ t1, t2 set t1.profile_id = 1, t2.profile_id = 1 where ta.a=t.ba", true, "UPDATE /*+ TIDB_HJ(`t1`, `t2`)*/ (`t1`) JOIN `t2` SET `t1`.`profile_id`=1, `t2`.`profile_id`=1 WHERE `ta`.`a`=`t`.`ba`"},
+		// fail case for update statement
 		{"UPDATE items,month SET items.price=month.price WHERE items.id=month.id LIMIT 10;", false, ""},
-		{"UPDATE user T0 LEFT OUTER JOIN user_profile T1 ON T1.id = T0.profile_id SET T0.profile_id = 1 WHERE T0.profile_id IN (1);", true, ""},
-		{"UPDATE /*+ TiDB_INLJ(t1, t2) */ t1, t2 set t1.profile_id = 1, t2.profile_id = 1 where ta.a=t.ba", true, ""},
-		{"UPDATE /*+ TiDB_SMJ(t1, t2) */ t1, t2 set t1.profile_id = 1, t2.profile_id = 1 where ta.a=t.ba", true, ""},
+		{"UPDATE items,month SET items.price=month.price WHERE items.id=month.id order by month.id;", false, ""},
+		// for "USE INDEX" in delete statement
+		{"UPDATE t1 USE INDEX(idx_a) SET t1.price=3.25 WHERE t1.id=1;", true, "UPDATE `t1` USE INDEX (`idx_a`) SET `t1`.`price`=3.25 WHERE `t1`.`id`=1"},
+		{"UPDATE t1 USE INDEX(idx_a) JOIN t2 SET t1.price=t2.price WHERE t1.id=t2.id;", true, "UPDATE `t1` USE INDEX (`idx_a`) JOIN `t2` SET `t1`.`price`=`t2`.`price` WHERE `t1`.`id`=`t2`.`id`"},
+		{"UPDATE t1 USE INDEX(idx_a) JOIN t2 USE INDEX(idx_a) SET t1.price=t2.price WHERE t1.id=t2.id;", true, "UPDATE `t1` USE INDEX (`idx_a`) JOIN `t2` USE INDEX (`idx_a`) SET `t1`.`price`=`t2`.`price` WHERE `t1`.`id`=`t2`.`id`"},
 
 		// for select with where clause
 		{"SELECT * FROM t WHERE 1 = 1", true, "SELECT * FROM `t` WHERE 1=1"},
@@ -549,7 +607,13 @@ AAAAAAAAAAAAAAAAAAAAAAAAEzgNAAgAEgAEBAQEEgAA2QAEGggAAAAICAgCAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAA5gm5Mg==
-'/*!*/;`, true, ""},
+'/*!*/;`, true, `BINLOG '
+BxSFVw8JAAAA8QAAAPUAAAAAAAQANS41LjQ0LU1hcmlhREItbG9nAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAEzgNAAgAEgAEBAQEEgAA2QAEGggAAAAICAgCAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAA5gm5Mg==
+'`},
 
 		// for partition table dml
 		{"select * from t1 partition (p1)", true, ""},
@@ -563,141 +627,147 @@ AAAAAAAAAAAA5gm5Mg==
 func (s *testParserSuite) TestDBAStmt(c *C) {
 	table := []testCase{
 		// for SHOW statement
-		{"SHOW VARIABLES LIKE 'character_set_results'", true, ""},
-		{"SHOW GLOBAL VARIABLES LIKE 'character_set_results'", true, ""},
-		{"SHOW SESSION VARIABLES LIKE 'character_set_results'", true, ""},
-		{"SHOW VARIABLES", true, ""},
-		{"SHOW GLOBAL VARIABLES", true, ""},
-		{"SHOW GLOBAL VARIABLES WHERE Variable_name = 'autocommit'", true, ""},
-		{"SHOW STATUS", true, ""},
-		{"SHOW GLOBAL STATUS", true, ""},
-		{"SHOW SESSION STATUS", true, ""},
-		{`SHOW STATUS LIKE 'Up%'`, true, ""},
-		{`SHOW STATUS WHERE Variable_name LIKE 'Up%'`, true, ""},
-		{`SHOW FULL TABLES FROM icar_qa LIKE play_evolutions`, true, ""},
-		{`SHOW FULL TABLES WHERE Table_Type != 'VIEW'`, true, ""},
-		{`SHOW GRANTS`, true, ""},
-		{`SHOW GRANTS FOR 'test'@'localhost'`, true, ""},
-		{`SHOW GRANTS FOR current_user()`, true, ""},
-		{`SHOW GRANTS FOR current_user`, true, ""},
-		{`SHOW COLUMNS FROM City;`, true, ""},
-		{`SHOW COLUMNS FROM tv189.1_t_1_x;`, true, ""},
-		{`SHOW FIELDS FROM City;`, true, ""},
-		{`SHOW TRIGGERS LIKE 't'`, true, ""},
-		{`SHOW DATABASES LIKE 'test2'`, true, ""},
-		{`SHOW PROCEDURE STATUS WHERE Db='test'`, true, ""},
+		{"SHOW VARIABLES LIKE 'character_set_results'", true, "SHOW SESSION VARIABLES LIKE 'character_set_results'"},
+		{"SHOW GLOBAL VARIABLES LIKE 'character_set_results'", true, "SHOW GLOBAL VARIABLES LIKE 'character_set_results'"},
+		{"SHOW SESSION VARIABLES LIKE 'character_set_results'", true, "SHOW SESSION VARIABLES LIKE 'character_set_results'"},
+		{"SHOW VARIABLES", true, "SHOW SESSION VARIABLES"},
+		{"SHOW GLOBAL VARIABLES", true, "SHOW GLOBAL VARIABLES"},
+		{"SHOW GLOBAL VARIABLES WHERE Variable_name = 'autocommit'", true, "SHOW GLOBAL VARIABLES WHERE `Variable_name`='autocommit'"},
+		{"SHOW STATUS", true, "SHOW SESSION STATUS"},
+		{"SHOW GLOBAL STATUS", true, "SHOW GLOBAL STATUS"},
+		{"SHOW SESSION STATUS", true, "SHOW SESSION STATUS"},
+		{`SHOW STATUS LIKE 'Up%'`, true, "SHOW SESSION STATUS LIKE 'Up%'"},
+		{`SHOW STATUS WHERE Variable_name`, true, "SHOW SESSION STATUS WHERE `Variable_name`"},
+		{`SHOW STATUS WHERE Variable_name LIKE 'Up%'`, true, "SHOW SESSION STATUS WHERE `Variable_name` LIKE 'Up%'"},
+		{`SHOW FULL TABLES FROM icar_qa LIKE play_evolutions`, true, "SHOW FULL TABLES IN `icar_qa` LIKE `play_evolutions`"},
+		{`SHOW FULL TABLES WHERE Table_Type != 'VIEW'`, true, "SHOW FULL TABLES WHERE `Table_Type`!='VIEW'"},
+		{`SHOW GRANTS`, true, "SHOW GRANTS"},
+		{`SHOW GRANTS FOR 'test'@'localhost'`, true, "SHOW GRANTS FOR `test`@`localhost`"},
+		{`SHOW GRANTS FOR current_user()`, true, "SHOW GRANTS FOR CURRENT_USER"},
+		{`SHOW GRANTS FOR current_user`, true, "SHOW GRANTS FOR CURRENT_USER"},
+		{`SHOW COLUMNS FROM City;`, true, "SHOW COLUMNS IN `City`"},
+		{`SHOW COLUMNS FROM tv189.1_t_1_x;`, true, "SHOW COLUMNS IN `tv189`.`1_t_1_x`"},
+		{`SHOW FIELDS FROM City;`, true, "SHOW COLUMNS IN `City`"},
+		{`SHOW TRIGGERS LIKE 't'`, true, "SHOW TRIGGERS LIKE 't'"},
+		{`SHOW DATABASES LIKE 'test2'`, true, "SHOW DATABASES LIKE 'test2'"},
+		// PROCEDURE and FUNCTION are currently not supported.
+		// And FUNCTION reuse show procedure status process logic.
+		{`SHOW PROCEDURE STATUS WHERE Db='test'`, true, "SHOW PROCEDURE STATUS WHERE `Db`='test'"},
 		{`SHOW FUNCTION STATUS WHERE Db='test'`, true, ""},
-		{`SHOW INDEX FROM t;`, true, ""},
-		{`SHOW KEYS FROM t;`, true, ""},
-		{`SHOW INDEX IN t;`, true, ""},
-		{`SHOW KEYS IN t;`, true, ""},
-		{`SHOW INDEXES IN t where true;`, true, ""},
-		{`SHOW KEYS FROM t FROM test where true;`, true, ""},
-		{`SHOW EVENTS FROM test_db WHERE definer = 'current_user'`, true, ""},
-		{`SHOW PLUGINS`, true, ""},
-		{`SHOW PROFILES`, true, ""},
-		{`SHOW MASTER STATUS`, true, ""},
-		{`SHOW PRIVILEGES`, true, ""},
+		{`SHOW INDEX FROM t;`, true, "SHOW INDEX IN `t`"},
+		{`SHOW KEYS FROM t;`, true, "SHOW INDEX IN `t`"},
+		{`SHOW INDEX IN t;`, true, "SHOW INDEX IN `t`"},
+		{`SHOW KEYS IN t;`, true, "SHOW INDEX IN `t`"},
+		{`SHOW INDEXES IN t where true;`, true, "SHOW INDEX IN `t` WHERE TRUE"},
+		{`SHOW KEYS FROM t FROM test where true;`, true, "SHOW INDEX IN `test`.`t` WHERE TRUE"},
+		{`SHOW EVENTS FROM test_db WHERE definer = 'current_user'`, true, "SHOW EVENTS IN `test_db` WHERE `definer`='current_user'"},
+		{`SHOW PLUGINS`, true, "SHOW PLUGINS"},
+		{`SHOW PROFILES`, true, "SHOW PROFILES"},
+		{`SHOW MASTER STATUS`, true, "SHOW MASTER STATUS"},
+		{`SHOW PRIVILEGES`, true, "SHOW PRIVILEGES"},
 		// for show character set
-		{"show character set;", true, ""},
-		{"show charset", true, ""},
+		{"show character set;", true, "SHOW CHARSET"},
+		{"show charset", true, "SHOW CHARSET"},
 		// for show collation
-		{"show collation", true, ""},
-		{`show collation like 'utf8%'`, true, ""},
-		{"show collation where Charset = 'utf8' and Collation = 'utf8_bin'", true, ""},
+		{"show collation", true, "SHOW COLLATION"},
+		{`show collation like 'utf8%'`, true, "SHOW COLLATION LIKE 'utf8%'"},
+		{"show collation where Charset = 'utf8' and Collation = 'utf8_bin'", true, "SHOW COLLATION WHERE `Charset`='utf8' AND `Collation`='utf8_bin'"},
 		// for show full columns
-		{"show columns in t;", true, ""},
-		{"show full columns in t;", true, ""},
+		{"show columns in t;", true, "SHOW COLUMNS IN `t`"},
+		{"show full columns in t;", true, "SHOW FULL COLUMNS IN `t`"},
 		// for show create table
-		{"show create table test.t", true, ""},
-		{"show create table t", true, ""},
+		{"show create table test.t", true, "SHOW CREATE TABLE `test`.`t`"},
+		{"show create table t", true, "SHOW CREATE TABLE `t`"},
+		// for show create view
+		{"show create view test.t", true, "SHOW CREATE VIEW `test`.`t`"},
+		{"show create view t", true, "SHOW CREATE VIEW `t`"},
 		// for show create database
-		{"show create database d1", true, ""},
-		{"show create database if not exists d1", true, ""},
+		{"show create database d1", true, "SHOW CREATE DATABASE `d1`"},
+		{"show create database if not exists d1", true, "SHOW CREATE DATABASE IF NOT EXISTS `d1`"},
 		// for show stats_meta.
-		{"show stats_meta", true, ""},
-		{"show stats_meta where table_name = 't'", true, ""},
+		{"show stats_meta", true, "SHOW STATS_META"},
+		{"show stats_meta where table_name = 't'", true, "SHOW STATS_META WHERE `table_name`='t'"},
 		// for show stats_histograms
-		{"show stats_histograms", true, ""},
-		{"show stats_histograms where col_name = 'a'", true, ""},
+		{"show stats_histograms", true, "SHOW STATS_HISTOGRAMS"},
+		{"show stats_histograms where col_name = 'a'", true, "SHOW STATS_HISTOGRAMS WHERE `col_name`='a'"},
 		// for show stats_buckets
-		{"show stats_buckets", true, ""},
-		{"show stats_buckets where col_name = 'a'", true, ""},
+		{"show stats_buckets", true, "SHOW STATS_BUCKETS"},
+		{"show stats_buckets where col_name = 'a'", true, "SHOW STATS_BUCKETS WHERE `col_name`='a'"},
 		// for show stats_healthy.
-		{"show stats_healthy", true, ""},
-		{"show stats_healthy where table_name = 't'", true, ""},
+		{"show stats_healthy", true, "SHOW STATS_HEALTHY"},
+		{"show stats_healthy where table_name = 't'", true, "SHOW STATS_HEALTHY WHERE `table_name`='t'"},
 
 		// for load stats
 		{"load stats '/tmp/stats.json'", true, "LOAD STATS '/tmp/stats.json'"},
 		// set
 		// user defined
-		{"SET @ = 1", true, ""},
-		{"SET @' ' = 1", true, ""},
+		{"SET @ = 1", true, "SET @``=1"},
+		{"SET @' ' = 1", true, "SET @` `=1"},
 		{"SET @! = 1", false, ""},
-		{"SET @1 = 1", true, ""},
-		{"SET @a = 1", true, ""},
-		{"SET @b := 1", true, ""},
-		{"SET @.c = 1", true, ""},
-		{"SET @_d = 1", true, ""},
-		{"SET @_e._$. = 1", true, ""},
+		{"SET @1 = 1", true, "SET @`1`=1"},
+		{"SET @a = 1", true, "SET @`a`=1"},
+		{"SET @b := 1", true, "SET @`b`=1"},
+		{"SET @.c = 1", true, "SET @`.c`=1"},
+		{"SET @_d = 1", true, "SET @`_d`=1"},
+		{"SET @_e._$. = 1", true, "SET @`_e._$.`=1"},
 		{"SET @~f = 1", false, ""},
-		{"SET @`g,` = 1", true, ""},
+		{"SET @`g,` = 1", true, "SET @`g,`=1"},
 		// session system variables
-		{"SET SESSION autocommit = 1", true, ""},
-		{"SET @@session.autocommit = 1", true, ""},
-		{"SET @@SESSION.autocommit = 1", true, ""},
-		{"SET @@GLOBAL.GTID_PURGED = '123'", true, ""},
-		{"SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN", true, ""},
-		{"SET LOCAL autocommit = 1", true, ""},
-		{"SET @@local.autocommit = 1", true, ""},
-		{"SET @@autocommit = 1", true, ""},
-		{"SET autocommit = 1", true, ""},
+		{"SET SESSION autocommit = 1", true, "SET @@SESSION.`autocommit`=1"},
+		{"SET @@session.autocommit = 1", true, "SET @@SESSION.`autocommit`=1"},
+		{"SET @@SESSION.autocommit = 1", true, "SET @@SESSION.`autocommit`=1"},
+		{"SET @@GLOBAL.GTID_PURGED = '123'", true, "SET @@GLOBAL.`gtid_purged`='123'"},
+		{"SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN", true, "SET @`MYSQLDUMP_TEMP_LOG_BIN`=@@SESSION.`sql_log_bin`"},
+		{"SET LOCAL autocommit = 1", true, "SET @@SESSION.`autocommit`=1"},
+		{"SET @@local.autocommit = 1", true, "SET @@SESSION.`autocommit`=1"},
+		{"SET @@autocommit = 1", true, "SET @@SESSION.`autocommit`=1"},
+		{"SET autocommit = 1", true, "SET @@SESSION.`autocommit`=1"},
 		// global system variables
-		{"SET GLOBAL autocommit = 1", true, ""},
-		{"SET @@global.autocommit = 1", true, ""},
+		{"SET GLOBAL autocommit = 1", true, "SET @@GLOBAL.`autocommit`=1"},
+		{"SET @@global.autocommit = 1", true, "SET @@GLOBAL.`autocommit`=1"},
 		// set default value
-		{"SET @@global.autocommit = default", true, ""},
-		{"SET @@session.autocommit = default", true, ""},
+		{"SET @@global.autocommit = default", true, "SET @@GLOBAL.`autocommit`=DEFAULT"},
+		{"SET @@session.autocommit = default", true, "SET @@SESSION.`autocommit`=DEFAULT"},
 		// SET CHARACTER SET
-		{"SET CHARACTER SET utf8mb4;", true, ""},
-		{"SET CHARACTER SET 'utf8mb4';", true, ""},
+		{"SET CHARACTER SET utf8mb4;", true, "SET NAMES 'utf8mb4'"},
+		{"SET CHARACTER SET 'utf8mb4';", true, "SET NAMES 'utf8mb4'"},
 		// set password
-		{"SET PASSWORD = 'password';", true, ""},
-		{"SET PASSWORD FOR 'root'@'localhost' = 'password';", true, ""},
+		{"SET PASSWORD = 'password';", true, "SET PASSWORD='password'"},
+		{"SET PASSWORD FOR 'root'@'localhost' = 'password';", true, "SET PASSWORD FOR `root`@`localhost`='password'"},
 		// SET TRANSACTION Syntax
-		{"SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ", true, ""},
-		{"SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ", true, ""},
-		{"SET SESSION TRANSACTION READ WRITE", true, ""},
-		{"SET SESSION TRANSACTION READ ONLY", true, ""},
-		{"SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED", true, ""},
-		{"SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED", true, ""},
-		{"SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE", true, ""},
-		{"SET TRANSACTION ISOLATION LEVEL REPEATABLE READ", true, ""},
-		{"SET TRANSACTION READ WRITE", true, ""},
-		{"SET TRANSACTION READ ONLY", true, ""},
-		{"SET TRANSACTION ISOLATION LEVEL READ COMMITTED", true, ""},
-		{"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED", true, ""},
-		{"SET TRANSACTION ISOLATION LEVEL SERIALIZABLE", true, ""},
+		{"SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ", true, "SET @@SESSION.`tx_isolation`='REPEATABLE-READ'"},
+		{"SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ", true, "SET @@GLOBAL.`tx_isolation`='REPEATABLE-READ'"},
+		{"SET SESSION TRANSACTION READ WRITE", true, "SET @@SESSION.`tx_read_only`='0'"},
+		{"SET SESSION TRANSACTION READ ONLY", true, "SET @@SESSION.`tx_read_only`='1'"},
+		{"SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED", true, "SET @@SESSION.`tx_isolation`='READ-COMMITTED'"},
+		{"SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED", true, "SET @@SESSION.`tx_isolation`='READ-UNCOMMITTED'"},
+		{"SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE", true, "SET @@SESSION.`tx_isolation`='SERIALIZABLE'"},
+		{"SET TRANSACTION ISOLATION LEVEL REPEATABLE READ", true, "SET @@SESSION.`tx_isolation_one_shot`='REPEATABLE-READ'"},
+		{"SET TRANSACTION READ WRITE", true, "SET @@SESSION.`tx_read_only`='0'"},
+		{"SET TRANSACTION READ ONLY", true, "SET @@SESSION.`tx_read_only`='1'"},
+		{"SET TRANSACTION ISOLATION LEVEL READ COMMITTED", true, "SET @@SESSION.`tx_isolation_one_shot`='READ-COMMITTED'"},
+		{"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED", true, "SET @@SESSION.`tx_isolation_one_shot`='READ-UNCOMMITTED'"},
+		{"SET TRANSACTION ISOLATION LEVEL SERIALIZABLE", true, "SET @@SESSION.`tx_isolation_one_shot`='SERIALIZABLE'"},
 		// for set names
-		{"set names utf8", true, ""},
-		{"set names utf8 collate utf8_unicode_ci", true, ""},
-		{"set names binary", true, ""},
+		{"set names utf8", true, "SET NAMES 'utf8'"},
+		{"set names utf8 collate utf8_unicode_ci", true, "SET NAMES 'utf8' COLLATE 'utf8_unicode_ci'"},
+		{"set names binary", true, "SET NAMES 'binary'"},
 		// for set names and set vars
-		{"set names utf8, @@session.sql_mode=1;", true, ""},
-		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, ""},
+		{"set names utf8, @@session.sql_mode=1;", true, "SET NAMES 'utf8', @@SESSION.`sql_mode`=1"},
+		{"set @@session.sql_mode=1, names utf8, charset utf8;", true, "SET @@SESSION.`sql_mode`=1, NAMES 'utf8', NAMES 'utf8'"},
 
 		// for FLUSH statement
-		{"flush no_write_to_binlog tables tbl1 with read lock", true, ""},
-		{"flush table", true, ""},
-		{"flush tables", true, ""},
-		{"flush tables tbl1", true, ""},
-		{"flush no_write_to_binlog tables tbl1", true, ""},
-		{"flush local tables tbl1", true, ""},
-		{"flush table with read lock", true, ""},
-		{"flush tables tbl1, tbl2, tbl3", true, ""},
-		{"flush tables tbl1, tbl2, tbl3 with read lock", true, ""},
-		{"flush privileges", true, ""},
-		{"flush status", true, ""},
+		{"flush no_write_to_binlog tables tbl1 with read lock", true, "FLUSH NO_WRITE_TO_BINLOG TABLES `tbl1` WITH READ LOCK"},
+		{"flush table", true, "FLUSH TABLES"},
+		{"flush tables", true, "FLUSH TABLES"},
+		{"flush tables tbl1", true, "FLUSH TABLES `tbl1`"},
+		{"flush no_write_to_binlog tables tbl1", true, "FLUSH NO_WRITE_TO_BINLOG TABLES `tbl1`"},
+		{"flush local tables tbl1", true, "FLUSH NO_WRITE_TO_BINLOG TABLES `tbl1`"},
+		{"flush table with read lock", true, "FLUSH TABLES WITH READ LOCK"},
+		{"flush tables tbl1, tbl2, tbl3", true, "FLUSH TABLES `tbl1`, `tbl2`, `tbl3`"},
+		{"flush tables tbl1, tbl2, tbl3 with read lock", true, "FLUSH TABLES `tbl1`, `tbl2`, `tbl3` WITH READ LOCK"},
+		{"flush privileges", true, "FLUSH PRIVILEGES"},
+		{"flush status", true, "FLUSH STATUS"},
 	}
 	s.RunTest(c, table)
 }
@@ -1864,19 +1934,21 @@ func (s *testParserSuite) TestHintError(c *C) {
 	stmt, warns, err := parser.Parse("select /*+ tidb_unknow(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
-	c.Assert(warns[0].Error(), Equals, "line 1 column 32 near \"select /*+ tidb_unknow(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" (total length 71)")
+	c.Assert(warns[0].Error(), Equals, "line 1 column 32 near \"tidb_unknow(T1,t2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" ")
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
 	stmt, warns, err = parser.Parse("select /*+ tidb_unknow(T1,t2, 1) TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(len(stmt[0].(*ast.SelectStmt).TableHints), Equals, 0)
 	c.Assert(err, IsNil)
 	c.Assert(len(warns), Equals, 1)
-	c.Assert(warns[0].Error(), Equals, "line 1 column 53 near \"select /*+ tidb_unknow(T1,t2, 1) TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" (total length 92)")
+	c.Assert(warns[0].Error(), Equals, "line 1 column 53 near \"tidb_unknow(T1,t2, 1) TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" ")
 	stmt, _, err = parser.Parse("select c1, c2 from /*+ tidb_unknow(T1,t2) */ t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
 	stmt, _, err = parser.Parse("select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "line 1 column 7 near \"select1 /*+ TIDB_INLJ(t1, T2) */ c1, c2 from t1, t2 where t1.c1 = t2.c1\" ")
 	stmt, _, err = parser.Parse("select /*+ TIDB_INLJ(t1, T2) */ c1, c2 fromt t1, t2 where t1.c1 = t2.c1", "", "")
 	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Equals, "line 1 column 47 near \"t1, t2 where t1.c1 = t2.c1\" ")
 	_, _, err = parser.Parse("SELECT 1 FROM DUAL WHERE 1 IN (SELECT /*+ DEBUG_HINT3 */ 1)", "", "")
 	c.Assert(err, IsNil)
 }
@@ -1884,10 +1956,15 @@ func (s *testParserSuite) TestHintError(c *C) {
 func (s *testParserSuite) TestErrorMsg(c *C) {
 	parser := New()
 	_, _, err := parser.Parse("select1 1", "", "")
-	c.Assert(err.Error(), Equals, "line 1 column 7 near \"select1 1\" (total length 9)")
-
-	_, _, err = parser.Parse("select a1 from t1\nwhere t1.a2 = 1;\nselect1 1", "", "")
-	c.Assert(err.Error(), Equals, "line 3 column 7 near \"select1 1\" (total length 44)")
+	c.Assert(err.Error(), Equals, "line 1 column 7 near \"select1 1\" ")
+	_, _, err = parser.Parse("select 1 from1 dual", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 19 near \"dual\" ")
+	_, _, err = parser.Parse("select * from t1 join t2 from t1.a = t2.a;", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 29 near \"from t1.a = t2.a;\" ")
+	_, _, err = parser.Parse("select * from t1 join t2 one t1.a = t2.a;", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 31 near \"t1.a = t2.a;\" ")
+	_, _, err = parser.Parse("select * from t1 join t2 on t1.a >>> t2.a;", "", "")
+	c.Assert(err.Error(), Equals, "line 1 column 36 near \"> t2.a;\" ")
 }
 
 func (s *testParserSuite) TestOptimizerHints(c *C) {
@@ -1989,68 +2066,68 @@ func (s *testParserSuite) TestType(c *C) {
 func (s *testParserSuite) TestPrivilege(c *C) {
 	table := []testCase{
 		// for create user
-		{`CREATE USER 'test'`, true, ""},
-		{`CREATE USER test`, true, ""},
-		{"CREATE USER `test`", true, ""},
+		{`CREATE USER 'test'`, true, "CREATE USER `test`@`%`"},
+		{`CREATE USER test`, true, "CREATE USER `test`@`%`"},
+		{"CREATE USER `test`", true, "CREATE USER `test`@`%`"},
 		{"CREATE USER test-user", false, ""},
 		{"CREATE USER test.user", false, ""},
-		{"CREATE USER 'test-user'", true, ""},
-		{"CREATE USER `test-user`", true, ""},
+		{"CREATE USER 'test-user'", true, "CREATE USER `test-user`@`%`"},
+		{"CREATE USER `test-user`", true, "CREATE USER `test-user`@`%`"},
 		{"CREATE USER test.user", false, ""},
-		{"CREATE USER 'test.user'", true, ""},
-		{"CREATE USER `test.user`", true, ""},
-		{"CREATE USER uesr1@localhost", true, ""},
-		{"CREATE USER `uesr1`@localhost", true, ""},
-		{"CREATE USER uesr1@`localhost`", true, ""},
-		{"CREATE USER `uesr1`@`localhost`", true, ""},
-		{"CREATE USER 'uesr1'@localhost", true, ""},
-		{"CREATE USER uesr1@'localhost'", true, ""},
-		{"CREATE USER 'uesr1'@'localhost'", true, ""},
-		{"CREATE USER 'uesr1'@`localhost`", true, ""},
-		{"CREATE USER `uesr1`@'localhost'", true, ""},
-		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password", true, ""},
-		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password by 'new-password'", true, ""},
-		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password as 'hashstring'", true, ""},
-		{`CREATE USER IF NOT EXISTS 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, ""},
-		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, ""},
-		{`CREATE USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, ""},
-		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, ""},
-		{`ALTER USER IF EXISTS 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, ""},
-		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, ""},
-		{`ALTER USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, ""},
-		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, ""},
-		{`ALTER USER USER() IDENTIFIED BY 'new-password'`, true, ""},
-		{`ALTER USER IF EXISTS USER() IDENTIFIED BY 'new-password'`, true, ""},
-		{`DROP USER 'root'@'localhost', 'root1'@'localhost'`, true, ""},
-		{`DROP USER IF EXISTS 'root'@'localhost'`, true, ""},
+		{"CREATE USER 'test.user'", true, "CREATE USER `test.user`@`%`"},
+		{"CREATE USER `test.user`", true, "CREATE USER `test.user`@`%`"},
+		{"CREATE USER uesr1@localhost", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER `uesr1`@localhost", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER uesr1@`localhost`", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER `uesr1`@`localhost`", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER 'uesr1'@localhost", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER uesr1@'localhost'", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER 'uesr1'@'localhost'", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER 'uesr1'@`localhost`", true, "CREATE USER `uesr1`@`localhost`"},
+		{"CREATE USER `uesr1`@'localhost'", true, "CREATE USER `uesr1`@`localhost`"},
+		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password", true, "CREATE USER `bug19354014user`@`%`"},
+		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password by 'new-password'", true, "CREATE USER `bug19354014user`@`%` IDENTIFIED BY 'new-password'"},
+		{"create user 'bug19354014user'@'%' identified WITH mysql_native_password as 'hashstring'", true, "CREATE USER `bug19354014user`@`%` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`CREATE USER IF NOT EXISTS 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "CREATE USER IF NOT EXISTS `root`@`localhost` IDENTIFIED BY 'new-password'"},
+		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "CREATE USER `root`@`localhost` IDENTIFIED BY 'new-password'"},
+		{`CREATE USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, "CREATE USER `root`@`localhost` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`CREATE USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, "CREATE USER `root`@`localhost` IDENTIFIED BY 'new-password', `root`@`127.0.0.1` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`ALTER USER IF EXISTS 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "ALTER USER IF EXISTS `root`@`localhost` IDENTIFIED BY 'new-password'"},
+		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY 'new-password'"},
+		{`ALTER USER 'root'@'localhost' IDENTIFIED BY PASSWORD 'hashstring'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`ALTER USER 'root'@'localhost' IDENTIFIED BY 'new-password', 'root'@'127.0.0.1' IDENTIFIED BY PASSWORD 'hashstring'`, true, "ALTER USER `root`@`localhost` IDENTIFIED BY 'new-password', `root`@`127.0.0.1` IDENTIFIED BY PASSWORD 'hashstring'"},
+		{`ALTER USER USER() IDENTIFIED BY 'new-password'`, true, "ALTER USER USER() IDENTIFIED BY 'new-password'"},
+		{`ALTER USER IF EXISTS USER() IDENTIFIED BY 'new-password'`, true, "ALTER USER IF EXISTS USER() IDENTIFIED BY 'new-password'"},
+		{`DROP USER 'root'@'localhost', 'root1'@'localhost'`, true, "DROP USER `root`@`localhost`, `root1`@`localhost`"},
+		{`DROP USER IF EXISTS 'root'@'localhost'`, true, "DROP USER IF EXISTS `root`@`localhost`"},
 
 		// for grant statement
-		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost';", true, ""},
-		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost' WITH GRANT OPTION;", true, ""},
-		{"GRANT SELECT ON db2.invoice TO 'jeffrey'@'localhost';", true, ""},
-		{"GRANT ALL ON *.* TO 'someuser'@'somehost';", true, ""},
-		{"GRANT SELECT, INSERT ON *.* TO 'someuser'@'somehost';", true, ""},
-		{"GRANT ALL ON mydb.* TO 'someuser'@'somehost';", true, ""},
-		{"GRANT SELECT, INSERT ON mydb.* TO 'someuser'@'somehost';", true, ""},
-		{"GRANT ALL ON mydb.mytbl TO 'someuser'@'somehost';", true, ""},
-		{"GRANT SELECT, INSERT ON mydb.mytbl TO 'someuser'@'somehost';", true, ""},
-		{"GRANT SELECT (col1), INSERT (col1,col2) ON mydb.mytbl TO 'someuser'@'somehost';", true, ""},
-		{"grant all privileges on zabbix.* to 'zabbix'@'localhost' identified by 'password';", true, ""},
-		{"GRANT SELECT ON test.* to 'test'", true, ""},                                                                                                            // For issue 2654.
+		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost';", true, "GRANT ALL ON `db1`.* TO `jeffrey`@`localhost`"},
+		{"GRANT ALL ON db1.* TO 'jeffrey'@'localhost' WITH GRANT OPTION;", true, "GRANT ALL ON `db1`.* TO `jeffrey`@`localhost` WITH GRANT OPTION"},
+		{"GRANT SELECT ON db2.invoice TO 'jeffrey'@'localhost';", true, "GRANT SELECT ON `db2`.`invoice` TO `jeffrey`@`localhost`"},
+		{"GRANT ALL ON *.* TO 'someuser'@'somehost';", true, "GRANT ALL ON *.* TO `someuser`@`somehost`"},
+		{"GRANT SELECT, INSERT ON *.* TO 'someuser'@'somehost';", true, "GRANT SELECT, INSERT ON *.* TO `someuser`@`somehost`"},
+		{"GRANT ALL ON mydb.* TO 'someuser'@'somehost';", true, "GRANT ALL ON `mydb`.* TO `someuser`@`somehost`"},
+		{"GRANT SELECT, INSERT ON mydb.* TO 'someuser'@'somehost';", true, "GRANT SELECT, INSERT ON `mydb`.* TO `someuser`@`somehost`"},
+		{"GRANT ALL ON mydb.mytbl TO 'someuser'@'somehost';", true, "GRANT ALL ON `mydb`.`mytbl` TO `someuser`@`somehost`"},
+		{"GRANT SELECT, INSERT ON mydb.mytbl TO 'someuser'@'somehost';", true, "GRANT SELECT, INSERT ON `mydb`.`mytbl` TO `someuser`@`somehost`"},
+		{"GRANT SELECT (col1), INSERT (col1,col2) ON mydb.mytbl TO 'someuser'@'somehost';", true, "GRANT SELECT (`col1`), INSERT (`col1`,`col2`) ON `mydb`.`mytbl` TO `someuser`@`somehost`"},
+		{"grant all privileges on zabbix.* to 'zabbix'@'localhost' identified by 'password';", true, "GRANT ALL ON `zabbix`.* TO `zabbix`@`localhost` IDENTIFIED BY 'password'"},
+		{"GRANT SELECT ON test.* to 'test'", true, "GRANT SELECT ON `test`.* TO `test`@`%`"},                                                                      // For issue 2654.
 		{"grant PROCESS,usage, REPLICATION SLAVE, REPLICATION CLIENT on *.* to 'xxxxxxxxxx'@'%' identified by password 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'", true, ""}, // For issue 4865
 		{"/* rds internal mark */ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, RELOAD, PROCESS, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES,      EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT,      TRIGGER on *.* to 'root2'@'%' identified by password '*sdsadsdsadssadsadsadsadsada' with grant option", true, ""},
 
 		// for revoke statement
-		{"REVOKE ALL ON db1.* FROM 'jeffrey'@'localhost';", true, ""},
-		{"REVOKE SELECT ON db2.invoice FROM 'jeffrey'@'localhost';", true, ""},
-		{"REVOKE ALL ON *.* FROM 'someuser'@'somehost';", true, ""},
-		{"REVOKE SELECT, INSERT ON *.* FROM 'someuser'@'somehost';", true, ""},
-		{"REVOKE ALL ON mydb.* FROM 'someuser'@'somehost';", true, ""},
-		{"REVOKE SELECT, INSERT ON mydb.* FROM 'someuser'@'somehost';", true, ""},
-		{"REVOKE ALL ON mydb.mytbl FROM 'someuser'@'somehost';", true, ""},
-		{"REVOKE SELECT, INSERT ON mydb.mytbl FROM 'someuser'@'somehost';", true, ""},
-		{"REVOKE SELECT (col1), INSERT (col1,col2) ON mydb.mytbl FROM 'someuser'@'somehost';", true, ""},
-		{"REVOKE all privileges on zabbix.* FROM 'zabbix'@'localhost' identified by 'password';", true, ""},
+		{"REVOKE ALL ON db1.* FROM 'jeffrey'@'localhost';", true, "REVOKE ALL ON `db1`.* FROM `jeffrey`@`localhost`"},
+		{"REVOKE SELECT ON db2.invoice FROM 'jeffrey'@'localhost';", true, "REVOKE SELECT ON `db2`.`invoice` FROM `jeffrey`@`localhost`"},
+		{"REVOKE ALL ON *.* FROM 'someuser'@'somehost';", true, "REVOKE ALL ON *.* FROM `someuser`@`somehost`"},
+		{"REVOKE SELECT, INSERT ON *.* FROM 'someuser'@'somehost';", true, "REVOKE SELECT, INSERT ON *.* FROM `someuser`@`somehost`"},
+		{"REVOKE ALL ON mydb.* FROM 'someuser'@'somehost';", true, "REVOKE ALL ON `mydb`.* FROM `someuser`@`somehost`"},
+		{"REVOKE SELECT, INSERT ON mydb.* FROM 'someuser'@'somehost';", true, "REVOKE SELECT, INSERT ON `mydb`.* FROM `someuser`@`somehost`"},
+		{"REVOKE ALL ON mydb.mytbl FROM 'someuser'@'somehost';", true, "REVOKE ALL ON `mydb`.`mytbl` FROM `someuser`@`somehost`"},
+		{"REVOKE SELECT, INSERT ON mydb.mytbl FROM 'someuser'@'somehost';", true, "REVOKE SELECT, INSERT ON `mydb`.`mytbl` FROM `someuser`@`somehost`"},
+		{"REVOKE SELECT (col1), INSERT (col1,col2) ON mydb.mytbl FROM 'someuser'@'somehost';", true, "REVOKE SELECT (`col1`), INSERT (`col1`,`col2`) ON `mydb`.`mytbl` FROM `someuser`@`somehost`"},
+		{"REVOKE all privileges on zabbix.* FROM 'zabbix'@'localhost' identified by 'password';", true, "REVOKE ALL ON `zabbix`.* FROM `zabbix`@`localhost` IDENTIFIED BY 'password'"},
 	}
 	s.RunTest(c, table)
 }
@@ -2073,9 +2150,9 @@ func (s *testParserSuite) TestComment(c *C) {
 
 func (s *testParserSuite) TestCommentErrMsg(c *C) {
 	table := []testErrMsgCase{
-		{"delete from t where a = 7 or 1=1/*' and b = 'p'", false, errors.New("[parser:1064]You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '/*' and b = 'p'' at line 1")},
-		{"delete from t where a = 7 or\n 1=1/*' and b = 'p'", false, errors.New("[parser:1064]You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '/*' and b = 'p'' at line 2")},
-		{"select 1/*", false, errors.New("[parser:1064]You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '/*' at line 1")},
+		{"delete from t where a = 7 or 1=1/*' and b = 'p'", false, errors.New("near '/*' and b = 'p'' at line 1")},
+		{"delete from t where a = 7 or\n 1=1/*' and b = 'p'", false, errors.New("near '/*' and b = 'p'' at line 2")},
+		{"select 1/*", false, errors.New("near '/*' at line 1")},
 		{"select 1/* comment */", false, nil},
 	}
 	s.RunErrMsgTest(c, table)
@@ -2312,13 +2389,47 @@ func (s *testParserSuite) TestInsertStatementMemoryAllocation(c *C) {
 
 func (s *testParserSuite) TestExplain(c *C) {
 	table := []testCase{
-		{"explain select c1 from t1", true, ""},
-		{"explain delete t1, t2 from t1 inner join t2 inner join t3 where t1.id=t2.id and t2.id=t3.id;", true, ""},
-		{"explain insert into t values (1), (2), (3)", true, ""},
-		{"explain replace into foo values (1 || 2)", true, ""},
-		{"explain update t set id = id + 1 order by id desc;", true, ""},
-		{"explain select c1 from t1 union (select c2 from t2) limit 1, 1", true, ""},
-		{`explain format = "row" select c1 from t1 union (select c2 from t2) limit 1, 1`, true, ""},
+		{"explain select c1 from t1", true, "EXPLAIN FORMAT = 'row' SELECT `c1` FROM `t1`"},
+		{"explain delete t1, t2 from t1 inner join t2 inner join t3 where t1.id=t2.id and t2.id=t3.id;", true, "EXPLAIN FORMAT = 'row' DELETE `t1`,`t2` FROM (`t1` JOIN `t2`) JOIN `t3` WHERE `t1`.`id`=`t2`.`id` AND `t2`.`id`=`t3`.`id`"},
+		{"explain insert into t values (1), (2), (3)", true, "EXPLAIN FORMAT = 'row' INSERT INTO `t` VALUES (1),(2),(3)"},
+		{"explain replace into foo values (1 || 2)", true, "EXPLAIN FORMAT = 'row' REPLACE INTO `foo` VALUES (1 OR 2)"},
+		{"explain update t set id = id + 1 order by id desc;", true, "EXPLAIN FORMAT = 'row' UPDATE `t` SET `id`=`id`+1 ORDER BY `id` DESC"},
+		{"explain select c1 from t1 union (select c2 from t2) limit 1, 1", true, "EXPLAIN FORMAT = 'row' SELECT `c1` FROM `t1` UNION (SELECT `c2` FROM `t2`) LIMIT 1,1"},
+		{`explain format = "row" select c1 from t1 union (select c2 from t2) limit 1, 1`, true, "EXPLAIN FORMAT = 'row' SELECT `c1` FROM `t1` UNION (SELECT `c2` FROM `t2`) LIMIT 1,1"},
+		{"DESC SCHE.TABL", true, "DESC `SCHE`.`TABL`"},
+		{"DESC SCHE.TABL COLUM", true, "DESC `SCHE`.`TABL` `COLUM`"},
+		{"DESCRIBE SCHE.TABL COLUM", true, "DESC `SCHE`.`TABL` `COLUM`"},
+		{"EXPLAIN ANALYZE SELECT 1", true, "EXPLAIN ANALYZE SELECT 1"},
+		{"EXPLAIN FORMAT = 'dot' SELECT 1", true, "EXPLAIN FORMAT = 'dot' SELECT 1"},
+		{"EXPLAIN FORMAT = 'row' SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
+		{"EXPLAIN FORMAT = 'ROW' SELECT 1", true, "EXPLAIN FORMAT = 'ROW' SELECT 1"},
+		{"EXPLAIN SELECT 1", true, "EXPLAIN FORMAT = 'row' SELECT 1"},
+	}
+	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestPrepare(c *C) {
+	table := []testCase{
+		{"PREPARE pname FROM 'SELECT ?'", true, "PREPARE `pname` FROM 'SELECT ?'"},
+		{"PREPARE pname FROM @test", true, "PREPARE `pname` FROM @`test`"},
+		{"PREPARE `` FROM @test", true, "PREPARE `` FROM @`test`"},
+	}
+	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestDeallocate(c *C) {
+	table := []testCase{
+		{"DEALLOCATE PREPARE test", true, "DEALLOCATE PREPARE `test`"},
+		{"DEALLOCATE PREPARE ``", true, "DEALLOCATE PREPARE ``"},
+	}
+	s.RunTest(c, table)
+}
+
+func (s *testParserSuite) TestExecute(c *C) {
+	table := []testCase{
+		{"EXECUTE test", true, "EXECUTE `test`"},
+		{"EXECUTE test USING @var1,@var2", true, "EXECUTE `test` USING @`var1`,@`var2`"},
+		{"EXECUTE `` USING @var1,@var2", true, "EXECUTE `` USING @`var1`,@`var2`"},
 	}
 	s.RunTest(c, table)
 }
@@ -2448,14 +2559,14 @@ func (s *testParserSuite) TestSessionManage(c *C) {
 	table := []testCase{
 		// Kill statement.
 		// See https://dev.mysql.com/doc/refman/5.7/en/kill.html
-		{"kill 23123", true, ""},
-		{"kill connection 23123", true, ""},
-		{"kill query 23123", true, ""},
-		{"kill tidb 23123", true, ""},
-		{"kill tidb connection 23123", true, ""},
-		{"kill tidb query 23123", true, ""},
-		{"show processlist", true, ""},
-		{"show full processlist", true, ""},
+		{"kill 23123", true, "KILL 23123"},
+		{"kill connection 23123", true, "KILL 23123"},
+		{"kill query 23123", true, "KILL QUERY 23123"},
+		{"kill tidb 23123", true, "KILL TIDB 23123"},
+		{"kill tidb connection 23123", true, "KILL TIDB 23123"},
+		{"kill tidb query 23123", true, "KILL TIDB QUERY 23123"},
+		{"show processlist", true, "SHOW PROCESSLIST"},
+		{"show full processlist", true, "SHOW FULL PROCESSLIST"},
 	}
 	s.RunTest(c, table)
 }
@@ -2765,12 +2876,17 @@ type windowFrameBoundChecker struct {
 	fb         *ast.FrameBound
 	exprRc     int
 	timeUnitRc int
+	c          *C
 }
 
 // Enter implements ast.Visitor interface.
 func (wfc *windowFrameBoundChecker) Enter(inNode ast.Node) (outNode ast.Node, skipChildren bool) {
 	if _, ok := inNode.(*ast.FrameBound); ok {
 		wfc.fb = inNode.(*ast.FrameBound)
+		if wfc.fb.Unit != nil {
+			_, ok := wfc.fb.Expr.(ast.ValueExpr)
+			wfc.c.Assert(ok, IsFalse)
+		}
 	}
 	return inNode, false
 }
@@ -2800,14 +2916,14 @@ func (s *testParserSuite) TestVisitFrameBound(c *C) {
 		exprRc     int
 		timeUnitRc int
 	}{
-		{`SELECT AVG(val) OVER (RANGE INTERVAL '2:30' MINUTE_SECOND PRECEDING) FROM t;`, 1, 1},
+		{`SELECT AVG(val) OVER (RANGE INTERVAL 1+3 MINUTE_SECOND PRECEDING) FROM t;`, 1, 1},
 		{`SELECT AVG(val) OVER (RANGE 5 PRECEDING) FROM t;`, 1, 0},
 		{`SELECT AVG(val) OVER () FROM t;`, 0, 0},
 	}
 	for _, t := range table {
 		stmt, err := parser.ParseOneStmt(t.s, "", "")
 		c.Assert(err, IsNil)
-		checker := windowFrameBoundChecker{}
+		checker := windowFrameBoundChecker{c: c}
 		stmt.Accept(&checker)
 		c.Assert(checker.exprRc, Equals, t.exprRc)
 		c.Assert(checker.timeUnitRc, Equals, t.timeUnitRc)
@@ -2962,6 +3078,14 @@ func (checker *nodeTextCleaner) Enter(in ast.Node) (out ast.Node, skipChildren b
 					col.Options = append(col.Options[:i], col.Options[i+1:]...)
 				}
 			}
+		}
+	case *ast.DeleteStmt:
+		for _, tableHint := range node.TableHints {
+			tableHint.HintName.O = ""
+		}
+	case *ast.UpdateStmt:
+		for _, tableHint := range node.TableHints {
+			tableHint.HintName.O = ""
 		}
 	case *ast.Constraint:
 		if node.Option != nil {
