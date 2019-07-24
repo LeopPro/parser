@@ -204,6 +204,7 @@ type OnDeleteUpdateDef struct {
 	over			"OVER"
 	packKeys		"PACK_KEYS"
 	partition		"PARTITION"
+	partitioning		"PARTITIONING"
 	percentRank		"PERCENT_RANK"
 	precisionType		"PRECISION"
 	primary			"PRIMARY"
@@ -216,6 +217,7 @@ type OnDeleteUpdateDef struct {
 	realType		"REAL"
 	references		"REFERENCES"
 	regexpKwd		"REGEXP"
+	remove			"REMOVE"
 	rename         		"RENAME"
 	repeat			"REPEAT"
 	replace			"REPLACE"
@@ -1128,6 +1130,14 @@ AlterTableStmt:
 				Partition: $6.(*ast.PartitionOptions),
 			})
 		}
+		$$ = &ast.AlterTableStmt{
+			Table: $4.(*ast.TableName),
+			Specs: specs,
+		}
+	}
+|	"ALTER" IgnoreOptional "TABLE" TableName AlterTableSpecListOpt "REMOVE" "PARTITIONING"
+	{
+		specs := $5.([]*ast.AlterTableSpec)
 		$$ = &ast.AlterTableStmt{
 			Table: $4.(*ast.TableName),
 			Specs: specs,
