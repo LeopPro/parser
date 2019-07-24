@@ -8128,8 +8128,9 @@ yynewstate:
 		{
 			specs := yyS[yypt-2].item.([]*ast.AlterTableSpec)
 			parser.yyVAL.statement = &ast.AlterTableStmt{
-				Table: yyS[yypt-3].item.(*ast.TableName),
-				Specs: specs,
+				Table:                yyS[yypt-3].item.(*ast.TableName),
+				Specs:                specs,
+				IsRemovePartitioning: true,
 			}
 		}
 	case 4:

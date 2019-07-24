@@ -2160,8 +2160,8 @@ func (s *testParserSuite) TestDDL(c *C) {
 		{"recover table t1 abc", false, ""},
 
 		// for remove partitioning
-		{"alter table t remove partitioning", true, "ALTER TABLE `t`"},
-		{"alter table db.ident remove partitioning", true, "ALTER TABLE `db`.`ident`"},
+		{"alter table t remove partitioning", true, "ALTER TABLE `t` REMOVE PARTITIONING"},
+		{"alter table db.ident remove partitioning", true, "ALTER TABLE `db`.`ident` REMOVE PARTITIONING"},
 	}
 	s.RunTest(c, table)
 }

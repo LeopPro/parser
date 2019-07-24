@@ -1141,6 +1141,7 @@ AlterTableStmt:
 		$$ = &ast.AlterTableStmt{
 			Table: $4.(*ast.TableName),
 			Specs: specs,
+			IsRemovePartitioning: true,
 		}
 	}
 |	"ALTER" IgnoreOptional "TABLE" TableName "ANALYZE" "PARTITION" PartitionNameList AnalyzeOptionListOpt

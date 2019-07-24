@@ -2029,8 +2029,9 @@ func (n *AlterTableSpec) Accept(v Visitor) (Node, bool) {
 type AlterTableStmt struct {
 	ddlNode
 
-	Table *TableName
-	Specs []*AlterTableSpec
+	Table                *TableName
+	Specs                []*AlterTableSpec
+	IsRemovePartitioning bool
 }
 
 // Restore implements Node interface.
@@ -2048,6 +2049,9 @@ func (n *AlterTableStmt) Restore(ctx *RestoreCtx) error {
 		if err := spec.Restore(ctx); err != nil {
 			return errors.Annotatef(err, "An error occurred while restore AlterTableStmt.Specs[%d]", i)
 		}
+	}
+	if n.IsRemovePartitioning {
+		ctx.WriteKeyWord(" REMOVE PARTITIONING")
 	}
 	return nil
 }
