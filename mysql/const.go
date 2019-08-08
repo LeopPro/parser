@@ -16,6 +16,9 @@ package mysql
 import (
 	"fmt"
 	"strings"
+
+	"github.com/pingcap/errors"
+	. "github.com/pingcap/parser/format"
 )
 
 func newInvalidModeErr(s string) error {
@@ -28,7 +31,7 @@ var (
 	TiDBReleaseVersion = "None"
 
 	// ServerVersion is the version information of this tidb-server in MySQL's format.
-	ServerVersion = fmt.Sprintf("5.7.10-TiDB-%s", TiDBReleaseVersion)
+	ServerVersion = fmt.Sprintf("5.7.25-TiDB-%s", TiDBReleaseVersion)
 )
 
 // Header information.
@@ -179,6 +182,10 @@ const (
 	GlobalStatusTable = "GLOBAL_STATUS"
 	// TiDBTable is the table contains tidb info.
 	TiDBTable = "tidb"
+	//  RoleEdgesTable is the table contains role relation info
+	RoleEdgeTable = "role_edges"
+	// DefaultRoleTable is the table contain default active role info
+	DefaultRoleTable = "default_roles"
 )
 
 // PrivilegeType  privilege
@@ -222,6 +229,17 @@ const (
 	CreateViewPriv
 	// ShowViewPriv is the privilege to show create view.
 	ShowViewPriv
+	// CreateRolePriv the privilege to create a role.
+	CreateRolePriv
+	// DropRolePriv is the privilege to drop a role.
+	DropRolePriv
+
+	CreateTMPTablePriv
+	LockTablesPriv
+	CreateRoutinePriv
+	AlterRoutinePriv
+	EventPriv
+
 	// AllPriv is the privilege for all actions.
 	AllPriv
 )
@@ -265,24 +283,60 @@ const PWDHashLen = 40
 
 // Priv2UserCol is the privilege to mysql.user table column name.
 var Priv2UserCol = map[PrivilegeType]string{
-	CreatePriv:     "Create_priv",
-	SelectPriv:     "Select_priv",
-	InsertPriv:     "Insert_priv",
-	UpdatePriv:     "Update_priv",
-	DeletePriv:     "Delete_priv",
-	ShowDBPriv:     "Show_db_priv",
-	SuperPriv:      "Super_priv",
-	CreateUserPriv: "Create_user_priv",
-	TriggerPriv:    "Trigger_priv",
-	DropPriv:       "Drop_priv",
-	ProcessPriv:    "Process_priv",
-	GrantPriv:      "Grant_priv",
-	ReferencesPriv: "References_priv",
-	AlterPriv:      "Alter_priv",
-	ExecutePriv:    "Execute_priv",
-	IndexPriv:      "Index_priv",
-	CreateViewPriv: "Create_view_priv",
-	ShowViewPriv:   "Show_view_priv",
+	CreatePriv:         "Create_priv",
+	SelectPriv:         "Select_priv",
+	InsertPriv:         "Insert_priv",
+	UpdatePriv:         "Update_priv",
+	DeletePriv:         "Delete_priv",
+	ShowDBPriv:         "Show_db_priv",
+	SuperPriv:          "Super_priv",
+	CreateUserPriv:     "Create_user_priv",
+	TriggerPriv:        "Trigger_priv",
+	DropPriv:           "Drop_priv",
+	ProcessPriv:        "Process_priv",
+	GrantPriv:          "Grant_priv",
+	ReferencesPriv:     "References_priv",
+	AlterPriv:          "Alter_priv",
+	ExecutePriv:        "Execute_priv",
+	IndexPriv:          "Index_priv",
+	CreateViewPriv:     "Create_view_priv",
+	ShowViewPriv:       "Show_view_priv",
+	CreateRolePriv:     "Create_role_priv",
+	DropRolePriv:       "Drop_role_priv",
+	CreateTMPTablePriv: "Create_tmp_table_priv",
+	LockTablesPriv:     "Lock_tables_priv",
+	CreateRoutinePriv:  "Create_routine_priv",
+	AlterRoutinePriv:   "Alter_routine_priv",
+	EventPriv:          "Event_priv",
+}
+
+// Col2PrivType is the privilege tables column name to privilege type.
+var Col2PrivType = map[string]PrivilegeType{
+	"Create_priv":           CreatePriv,
+	"Select_priv":           SelectPriv,
+	"Insert_priv":           InsertPriv,
+	"Update_priv":           UpdatePriv,
+	"Delete_priv":           DeletePriv,
+	"Show_db_priv":          ShowDBPriv,
+	"Super_priv":            SuperPriv,
+	"Create_user_priv":      CreateUserPriv,
+	"Trigger_priv":          TriggerPriv,
+	"Drop_priv":             DropPriv,
+	"Process_priv":          ProcessPriv,
+	"Grant_priv":            GrantPriv,
+	"References_priv":       ReferencesPriv,
+	"Alter_priv":            AlterPriv,
+	"Execute_priv":          ExecutePriv,
+	"Index_priv":            IndexPriv,
+	"Create_view_priv":      CreateViewPriv,
+	"Show_view_priv":        ShowViewPriv,
+	"Create_role_priv":      CreateRolePriv,
+	"Drop_role_priv":        DropRolePriv,
+	"Create_tmp_table_priv": CreateTMPTablePriv,
+	"Lock_tables_priv":      LockTablesPriv,
+	"Create_routine_priv":   CreateRoutinePriv,
+	"Alter_routine_priv":    AlterRoutinePriv,
+	"Event_priv":            EventPriv,
 }
 
 // Command2Str is the command information to command name.
@@ -321,51 +375,33 @@ var Command2Str = map[byte]string{
 	ComResetConnection:  "Reset connect",
 }
 
-// Col2PrivType is the privilege tables column name to privilege type.
-var Col2PrivType = map[string]PrivilegeType{
-	"Create_priv":      CreatePriv,
-	"Select_priv":      SelectPriv,
-	"Insert_priv":      InsertPriv,
-	"Update_priv":      UpdatePriv,
-	"Delete_priv":      DeletePriv,
-	"Show_db_priv":     ShowDBPriv,
-	"Super_priv":       SuperPriv,
-	"Create_user_priv": CreateUserPriv,
-	"Trigger_priv":     TriggerPriv,
-	"Drop_priv":        DropPriv,
-	"Process_priv":     ProcessPriv,
-	"Grant_priv":       GrantPriv,
-	"References_priv":  ReferencesPriv,
-	"Alter_priv":       AlterPriv,
-	"Execute_priv":     ExecutePriv,
-	"Index_priv":       IndexPriv,
-	"Create_view_priv": CreateViewPriv,
-	"Show_view_priv":   ShowViewPriv,
-}
-
-// AllGlobalPrivs is all the privileges in global scope.
-var AllGlobalPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, GrantPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, TriggerPriv, CreateViewPriv, ShowViewPriv}
-
 // Priv2Str is the map for privilege to string.
 var Priv2Str = map[PrivilegeType]string{
-	CreatePriv:     "Create",
-	SelectPriv:     "Select",
-	InsertPriv:     "Insert",
-	UpdatePriv:     "Update",
-	DeletePriv:     "Delete",
-	ShowDBPriv:     "Show Databases",
-	SuperPriv:      "Super",
-	CreateUserPriv: "Create User",
-	TriggerPriv:    "Trigger",
-	DropPriv:       "Drop",
-	ProcessPriv:    "Process",
-	GrantPriv:      "Grant Option",
-	ReferencesPriv: "References",
-	AlterPriv:      "Alter",
-	ExecutePriv:    "Execute",
-	IndexPriv:      "Index",
-	CreateViewPriv: "Create View",
-	ShowViewPriv:   "Show View",
+	CreatePriv:         "Create",
+	SelectPriv:         "Select",
+	InsertPriv:         "Insert",
+	UpdatePriv:         "Update",
+	DeletePriv:         "Delete",
+	ShowDBPriv:         "Show Databases",
+	SuperPriv:          "Super",
+	CreateUserPriv:     "Create User",
+	TriggerPriv:        "Trigger",
+	DropPriv:           "Drop",
+	ProcessPriv:        "Process",
+	GrantPriv:          "Grant Option",
+	ReferencesPriv:     "References",
+	AlterPriv:          "Alter",
+	ExecutePriv:        "Execute",
+	IndexPriv:          "Index",
+	CreateViewPriv:     "Create View",
+	ShowViewPriv:       "Show View",
+	CreateRolePriv:     "Create Role",
+	DropRolePriv:       "Drop Role",
+	CreateTMPTablePriv: "CREATE TEMPORARY TABLES",
+	LockTablesPriv:     "LOCK TABLES",
+	CreateRoutinePriv:  "CREATE ROUTINE",
+	AlterRoutinePriv:   "ALTER ROUTINE",
+	EventPriv:          "EVENT",
 }
 
 // Priv2SetStr is the map for privilege to string.
@@ -382,6 +418,8 @@ var Priv2SetStr = map[PrivilegeType]string{
 	IndexPriv:      "Index",
 	CreateViewPriv: "Create View",
 	ShowViewPriv:   "Show View",
+	CreateRolePriv: "Create Role",
+	DropRolePriv:   "Drop Role",
 }
 
 // SetStr2Priv is the map for privilege set string to privilege type.
@@ -399,6 +437,9 @@ var SetStr2Priv = map[string]PrivilegeType{
 	"Create View": CreateViewPriv,
 	"Show View":   ShowViewPriv,
 }
+
+// AllGlobalPrivs is all the privileges in global scope.
+var AllGlobalPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, ProcessPriv, GrantPriv, ReferencesPriv, AlterPriv, ShowDBPriv, SuperPriv, ExecutePriv, IndexPriv, CreateUserPriv, TriggerPriv, CreateViewPriv, ShowViewPriv, CreateRolePriv, DropRolePriv, CreateTMPTablePriv, LockTablesPriv, CreateRoutinePriv, AlterRoutinePriv, EventPriv}
 
 // AllDBPrivs is all the privileges in database scope.
 var AllDBPrivs = []PrivilegeType{SelectPriv, InsertPriv, UpdatePriv, DeletePriv, CreatePriv, DropPriv, GrantPriv, AlterPriv, ExecutePriv, IndexPriv, CreateViewPriv, ShowViewPriv}
@@ -713,6 +754,23 @@ func Str2Priority(val string) PriorityEnum {
 	default:
 		return NoPriority
 	}
+}
+
+// Restore implements Node interface.
+func (n *PriorityEnum) Restore(ctx *RestoreCtx) error {
+	switch *n {
+	case NoPriority:
+		return nil
+	case LowPriority:
+		ctx.WriteKeyWord("LOW_PRIORITY")
+	case HighPriority:
+		ctx.WriteKeyWord("HIGH_PRIORITY")
+	case DelayedPriority:
+		ctx.WriteKeyWord("DELAYED")
+	default:
+		return errors.Errorf("undefined PriorityEnum Type[%d]", *n)
+	}
+	return nil
 }
 
 // PrimaryKeyName defines primary key name.
