@@ -671,6 +671,7 @@ var tokenMap = map[string]int{
 	"EXPR_PUSHDOWN_BLACKLIST":  exprPushdownBlacklist,
 	"OPT_RULE_BLACKLIST":       optRuleBlacklist,
 	"NOWAIT":                   nowait,
+	"ADVISE":                   advise,
 }
 
 // See https://dev.mysql.com/doc/refman/5.7/en/function-resolution.html for details

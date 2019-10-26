@@ -37,6 +37,7 @@ var (
 	_ StmtNode = &DoStmt{}
 	_ StmtNode = &ExecuteStmt{}
 	_ StmtNode = &ExplainStmt{}
+	_ StmtNode = &AdviseStmt{}
 	_ StmtNode = &GrantStmt{}
 	_ StmtNode = &PrepareStmt{}
 	_ StmtNode = &RollbackStmt{}
@@ -2170,6 +2171,25 @@ func (n *TableOptimizerHint) Accept(v Visitor) (Node, bool) {
 
 type BinaryLiteral interface {
 	ToString() string
+}
+
+type AdviseStmt struct {
+	stmtNode
+
+	SelectStmt *SelectStmt
+}
+
+func (n *AdviseStmt) Restore(ctx *RestoreCtx) error {
+	panic("implement me")
+}
+
+func (n *AdviseStmt) Accept(v Visitor) (node Node, ok bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*AdviseStmt)
+	return v.Leave(n)
 }
 
 // NewDecimal creates a types.Decimal value, it's provided by parser driver.

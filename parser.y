@@ -275,6 +275,7 @@ import (
 	yearMonth		"YEAR_MONTH"
 	zerofill		"ZEROFILL"
 	natural			"NATURAL"
+	advise                  "ADVISE"
 
 	/* The following tokens belong to UnReservedKeyword. Notice: make sure these tokens are contained in UnReservedKeyword. */
 	account		"ACCOUNT"
@@ -725,6 +726,7 @@ import (
 	EmptyStmt			"empty statement"
 	ExecuteStmt			"Execute statement"
 	ExplainStmt			"EXPLAIN statement"
+	AdviseStmt			"ADCISE statement"
 	ExplainableStmt			"explainable statement"
 	FlushStmt			"Flush statement"
 	GrantStmt			"Grant statement"
@@ -3841,6 +3843,15 @@ ExplainStmt:
             Analyze: true,
         }
     }
+
+
+AdviseStmt:
+	"ADVISE" SelectStmt
+	{
+		$$ = &ast.AdviseStmt{
+			SelectStmt: $2.(*ast.SelectStmt),
+		}
+	}
 
 ExplainFormatType:
 	"TRADITIONAL"
@@ -8400,6 +8411,7 @@ Statement:
 |	DeleteFromStmt
 |	ExecuteStmt
 |	ExplainStmt
+|	AdviseStmt
 |	ChangeStmt
 |	CreateDatabaseStmt
 |	CreateIndexStmt
